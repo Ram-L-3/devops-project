@@ -18,5 +18,10 @@ pipeline {
                 sh '. venv/bin/activate && python -m pytest'
             }
         }
+        stage('Build image') {
+            steps {
+                sh 'docker build -t devops-project:jenkins-${BUILD_NUMBER} .'
+            }
+        }
     }
 }
