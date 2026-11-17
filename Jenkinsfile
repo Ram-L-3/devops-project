@@ -23,5 +23,19 @@ pipeline {
                 sh 'docker build -t devops-project:jenkins-${BUILD_NUMBER} .'
             }
         }
+        stage('Deploy') {
+            steps {
+                sh 'docker rm -f devops-app || true'
+                sh 'docker run -d --name devops-app -p 5001:5000 devops-project:jenkins-${BUILD_NUMBER}'
+            }
+        }
+        stage('Health check') {
+            steps {
+                sh """
+                sleep 3
+                docker exec devops-app python -c "import urllib.request as u; print(u.urlopen('http://localhost:5000/health').read())"
+                """
+            }
+        }
     }
 }
