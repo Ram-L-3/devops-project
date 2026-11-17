@@ -4,15 +4,16 @@ pipeline {
         stage('Checkout') {
             steps { checkout scm }
         }
-        stage('Inspect') {
+        stage('Install') {
             steps {
-                sh 'whoami'
-                sh 'ls -la'
-                sh 'cat requirements.txt'
+                sh 'python3 -m venv venv'
+                sh '. venv/bin/activate && pip install -r requirements-dev.txt'
             }
         }
-        stage('Python check') {
-            steps { sh 'python3 --version' }
+        stage('Test') {
+            steps {
+                sh '. venv/bin/activate && python -m pytest'
+            }
         }
     }
 }
