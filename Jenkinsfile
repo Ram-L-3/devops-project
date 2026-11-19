@@ -23,18 +23,25 @@ pipeline {
                 sh 'docker build -t devops-project:jenkins-${BUILD_NUMBER} .'
             }
         }
-        stage('Deploy') {
+        stage('Deploy to server') {
             steps {
-                sh 'docker rm -f devops-app || true'
-                sh 'docker run -d --name devops-app -p 5001:5000 devops-project:jenkins-${BUILD_NUMBER}'
+                sh '''
+                    tar czf - app requirements.txt | ssh deploy@fake-server "mkdir -p ~/myapp && tar xzf - -C ~/myapp"
+                    ssh deploy@fake-server '
+                        cd ~/myapp
+                        python3 -m venv venv
+                        . venv/bin/activate
+                        pip install -q -r requirements.txt
+                        if [ -f app.pid ]; then kill $(cat app.pid) || true; fi
+                        nohup python app/app.py > app.log 2>&1 < /dev/null &
+                        echo $! > app.pid
+                    '
+                '''
             }
         }
-        stage('Health check') {
+        stage('Verify server') {
             steps {
-                sh """
-                sleep 3
-                docker exec devops-app python -c "import urllib.request as u; print(u.urlopen('http://localhost:5000/health').read())"
-                """
+                sh 'sleep 3 && ssh deploy@fake-server "curl -s localhost:5000/health"'
             }
         }
     }
